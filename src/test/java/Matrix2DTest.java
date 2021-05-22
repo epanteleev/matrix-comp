@@ -2,6 +2,8 @@
 import java.util.Random;
 
 import junit.framework.TestCase;
+import matrix.ConcurrencyUtils;
+import matrix.Matrix2D;
 
 /**
  * See DoubleMatrix2DTest

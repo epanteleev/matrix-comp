@@ -1,11 +1,14 @@
+package matrix;
+
 import java.util.concurrent.Future;
-import java.util.function.Function;
 
 public class Matrix2D {
 
     protected double[] elements;
 
-    /** the number of colums and rows this matrix (view) has */
+    /**
+     * the number of colums and rows this matrix (view) has
+     */
     protected int columns, rows;
 
     /**
@@ -31,10 +34,18 @@ public class Matrix2D {
         this.elements = new double[rows * columns];
     }
 
-    public void setQuick(int row, int column, double value) {
-        this.elements[rowZero + row * rowStride + columnZero + column * columnStride] = value;
+    public Matrix2D(double[][] values) {
+        this(values.length, values.length == 0 ? 0 : values[0].length);
+        assign(values);
     }
 
+    public void setQuick(int row, int column, double value) {
+        this.elements[rowZero + column * rowStride + columnZero + row * columnStride] = value;
+    }
+
+    public double getQuick(int row, int column) {
+        return elements[rowZero + column * rowStride + columnZero + row * columnStride];
+    }
 
     protected void setUp(int rows, int columns) {
         setUp(rows, columns, columns);
@@ -57,12 +68,12 @@ public class Matrix2D {
         }
     }
 
-    public double getQuick(int row, int column) {
-        return elements[rowZero + row * rowStride + columnZero + column * columnStride];
-    }
-
     public Matrix2D like(int rows, int columns) {
         return new Matrix2D(rows, columns);
+    }
+
+    public Matrix2D like() {
+        return like(rows, columns);
     }
 
     public long size() {
@@ -100,7 +111,7 @@ public class Matrix2D {
         final Matrix2D CC = like(m, p);
 
         if (B.rows != n)
-            throw new IllegalArgumentException("Matrix2D inner dimensions must agree:" + toStringShort() + ", "
+            throw new IllegalArgumentException("matrix.Matrix2D inner dimensions must agree:" + toStringShort() + ", "
                     + B.toStringShort());
         if (CC.rows != m || CC.columns != p)
             throw new IllegalArgumentException("Incompatibe result matrix: " + toStringShort() + ", "
@@ -152,7 +163,7 @@ public class Matrix2D {
         final Matrix2D CC = like(m, p);
 
         if (B.rows != n) {
-            throw new IllegalArgumentException("Matrix2D inner dimensions must agree:" + toStringShort() + ", "
+            throw new IllegalArgumentException("matrix.Matrix2D inner dimensions must agree:" + toStringShort() + ", "
                     + B.toStringShort());
         }
         if (CC.rows != m || CC.columns != p) {
@@ -186,52 +197,51 @@ public class Matrix2D {
         return CC;
     }
 
-    /**
-     * Constructs and returns a 2-dimensional array containing the cell values.
-     * The returned array <tt>values</tt> has the form
-     * <tt>values[row][column]</tt> and has the same number of rows and columns
-     * as the receiver.
-     * <p>
-     * The values are copied. So subsequent changes in <tt>values</tt> are not
-     * reflected in the matrix, and vice-versa.
-     *
-     * @return an array filled with the values of the cells.
-     */
-    public double[][] toArray() {
-        final double[][] values = new double[rows][columns];
-        int nthreads = ConcurrencyUtils.getNumberOfThreads();
-        if ((nthreads > 1) && (size() >= ConcurrencyUtils.getThreadsBeginN_2D())) {
-            nthreads = Math.min(nthreads, rows);
-            Future<?>[] futures = new Future[nthreads];
-            int k = rows / nthreads;
-            for (int j = 0; j < nthreads; j++) {
-                final int firstRow = j * k;
-                final int lastRow = (j == nthreads - 1) ? rows : firstRow + k;
-                futures[j] = ConcurrencyUtils.submit(new Runnable() {
-                    public void run() {
-                        for (int r = firstRow; r < lastRow; r++) {
-                            double[] currentRow = values[r];
-                            for (int c = 0; c < columns; c++) {
-                                currentRow[c] = getQuick(r, c);
-                            }
-                        }
-                    }
-                });
-            }
-            ConcurrencyUtils.waitForCompletion(futures);
-        } else {
-            for (int r = 0; r < rows; r++) {
-                double[] currentRow = values[r];
-                for (int c = 0; c < columns; c++) {
-                    currentRow[c] = getQuick(r, c);
+    public boolean isSquare() {
+        return rows == columns;
+    }
+
+    public boolean isDiagonal() {
+        double epsilon = Property.tolerance();
+        for (int row = rows(); --row >= 0; ) {
+            for (int column = columns(); --column >= 0; ) {
+                if (row != column && !(Math.abs(getQuick(row, column)) <= epsilon)) {
+                    return false;
                 }
             }
         }
-        return values;
+        return true;
     }
 
+    private void checkShape(Matrix2D B) {
+        if (columns != B.columns || rows != B.rows) {
+            throw new IllegalArgumentException("Incompatible dimensions: " + toStringShort() + " and "
+                    + B.toStringShort());
+        }
+    }
 
-    public Matrix2D assign(final Function<Double, Double> f) {
+    /**
+     * Returns <tt>true</tt> if both matrices share at least one identical cell.
+     */
+    protected boolean haveSharedCells(Matrix2D other) {
+        if (other == null) {
+            return false;
+        } else {
+            return this == other;
+        }
+    }
+
+    public Matrix2D assign(Matrix2D other) {
+        if (other == this) {
+            return this;
+        }
+        checkShape(other);
+        final Matrix2D source;
+        if (haveSharedCells(other)) {
+            source = other.copy();
+        } else {
+            source = other;
+        }
         int nthreads = ConcurrencyUtils.getNumberOfThreads();
         if ((nthreads > 1) && (rows * columns >= ConcurrencyUtils.getThreadsBeginN_2D())) {
             nthreads = Math.min(nthreads, rows);
@@ -240,13 +250,10 @@ public class Matrix2D {
             for (int j = 0; j < nthreads; j++) {
                 final int firstRow = j * k;
                 final int lastRow = (j == nthreads - 1) ? rows : firstRow + k;
-                futures[j] = ConcurrencyUtils.submit(new Runnable() {
-
-                    public void run() {
-                        for (int r = firstRow; r < lastRow; r++) {
-                            for (int c = 0; c < columns; c++) {
-                                setQuick(r, c, f.apply(getQuick(r, c)));
-                            }
+                futures[j] = ConcurrencyUtils.submit(() -> {
+                    for (int r = firstRow; r < lastRow; r++) {
+                        for (int c = 0; c < columns; c++) {
+                            setQuick(r, c, source.getQuick(r, c));
                         }
                     }
                 });
@@ -255,10 +262,88 @@ public class Matrix2D {
         } else {
             for (int r = 0; r < rows; r++) {
                 for (int c = 0; c < columns; c++) {
-                    setQuick(r, c, f.apply(getQuick(r, c)));
+                    setQuick(r, c, source.getQuick(r, c));
                 }
             }
         }
         return this;
     }
+
+    public long index(int row, int column) {
+        return rowZero + (long) row * rowStride + columnZero + (long) column * columnStride;
+    }
+
+    public void assign(final double[][] values) {
+        if (values.length != rows)
+            throw new IllegalArgumentException("Must have same number of rows: rows=" + values.length + "rows()="
+                    + rows());
+        int nthreads = ConcurrencyUtils.getNumberOfThreads();
+
+        final int zero = (int) index(0, 0);
+        if ((nthreads > 1) && (size() >= ConcurrencyUtils.getThreadsBeginN_2D())) {
+            nthreads = Math.min(nthreads, rows);
+            Future<?>[] futures = new Future[nthreads];
+            int k = rows / nthreads;
+            for (int j = 0; j < nthreads; j++) {
+                final int firstRow = j * k;
+                final int lastRow = (j == nthreads - 1) ? rows : firstRow + k;
+                futures[j] = ConcurrencyUtils.submit(() -> {
+                    int idx = zero + firstRow * rowStride;
+                    for (int r = firstRow; r < lastRow; r++) {
+                        double[] currentRow = values[r];
+                        if (currentRow.length != columns)
+                            throw new IllegalArgumentException("Must have same number of columns in every row: columns="
+                                            + currentRow.length + "columns()=" + columns());
+                        for (int i = idx, c = 0; c < columns; c++) {
+                            elements[i] = currentRow[c];
+                            i += columnStride;
+                        }
+                        idx += rowStride;
+                    }
+                });
+            }
+            ConcurrencyUtils.waitForCompletion(futures);
+        } else {
+            int idx = zero;
+            for (int r = 0; r < rows; r++) {
+                double[] currentRow = values[r];
+                if (currentRow.length != columns)
+                    throw new IllegalArgumentException("Must have same number of columns in every row: columns="
+                            + currentRow.length + "columns()=" + columns());
+                for (int i = idx, c = 0; c < columns; c++) {
+                    elements[i] = currentRow[c];
+                    i += columnStride;
+                }
+                idx += rowStride;
+            }
+        }
+    }
+
+    /**
+     * @return a deep copy of the receiver.
+     */
+    public Matrix2D copy() {
+        return like().assign(this);
+    }
+
+    public Matrix2D inverse() {
+        Matrix2D inv = copy();
+        if (isSquare() && isDiagonal()) {
+            boolean isNonSingular = true;
+            for (int i = inv.rows(); --i >= 0; ) {
+                double v = inv.getQuick(i, i);
+                isNonSingular &= (v != 0);
+                inv.setQuick(i, i, 1 / v);
+            }
+            if (!isNonSingular) {
+                throw new IllegalArgumentException("A is singular.");
+            }
+        } else {
+            Matrix2D lu = copy();
+            int[] p = Algorithm.LUPDecomposition(lu);
+            Algorithm.LUPInvert(inv, lu, p);
+        }
+        return inv;
+    }
+
 }
