@@ -40,11 +40,11 @@ public class Matrix2D {
     }
 
     public void setQuick(int row, int column, double value) {
-        this.elements[rowZero + column * rowStride + columnZero + row * columnStride] = value;
+        this.elements[rowZero + row * rowStride + columnZero + column * columnStride] = value;
     }
 
     public double getQuick(int row, int column) {
-        return elements[rowZero + column * rowStride + columnZero + row * columnStride];
+        return elements[rowZero + row * rowStride + columnZero + column * columnStride];
     }
 
     protected void setUp(int rows, int columns) {
