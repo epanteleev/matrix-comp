@@ -9,7 +9,7 @@ import java.util.Random;
 @State(Scope.Benchmark)
 public class MatrixBenchmark {
 
-    private static final Random random = new Random(0);
+    private static Random random;
     /**
      * Matrix to test
      */
@@ -22,6 +22,7 @@ public class MatrixBenchmark {
 
     @Setup(Level.Invocation)
     public void setUp() {
+        random = new Random(0);
         createMatrices();
         populateMatrices();
     }

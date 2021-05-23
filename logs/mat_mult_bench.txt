@@ -1,3 +1,5 @@
+1300 x 1700 matrix
+8 threads, max 10_000 coroutine
 # JMH version: 1.21
 # VM version: JDK 16-loom, OpenJDK 64-Bit Server VM, 16-loom+9-316
 # VM invoker: D:\Java\jdk-16\bin\java.exe
