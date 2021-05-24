@@ -9,12 +9,13 @@ import java.util.concurrent.TimeUnit;
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
+@Fork(value = 5, jvmArgs = {"-Xms2G", "-Xmx10G"})
 public class FFTBenchmark {
 
     private DoubleFFT_1D fft;
 
     private double[] x;
-    private static int sizes1D = 2_000_000;
+    private static int sizes1D = 3_000_000;
 
 
     @Setup(Level.Invocation)

@@ -1957,12 +1957,11 @@ public class CommonUtils {
     }
 
     public static void cftrec4_th(final int n, final double[] a, final int offa, final int nw, final double[] w) {
-        int i;
-        int idiv4, m, nthreads;
+        int nthreads;
         int idx = 0;
         nthreads = 2;
-        idiv4 = 0;
-        m = n >> 1;
+        int idiv4 = 0;
+        int m = n >> 1;
         if (n >= CommonUtils.getThreadsBeginN_1D_FFT_4Threads()) {
             nthreads = 4;
             idiv4 = 1;
@@ -1970,48 +1969,44 @@ public class CommonUtils {
         }
         Future<?>[] futures = new Future[nthreads];
         final int mf = m;
-        for (i = 0; i < nthreads; i++) {
+        for (int i = 0; i < nthreads; i++) {
             final int firstIdx = offa + i * m;
             if (i != idiv4) {
-                futures[idx++] = ConcurrencyUtils.submit(new Runnable() {
-                    public void run() {
-                        int isplt, j, k, m;
-                        int idx1 = firstIdx + mf;
-                        m = n;
-                        while (m > 512) {
-                            m >>= 2;
-                            cftmdl1(m, a, idx1 - m, w, nw - (m >> 1));
-                        }
-                        cftleaf(m, 1, a, idx1 - m, nw, w);
-                        k = 0;
-                        int idx2 = firstIdx - m;
-                        for (j = mf - m; j > 0; j -= m) {
-                            k++;
-                            isplt = cfttree(m, j, k, a, firstIdx, nw, w);
-                            cftleaf(m, isplt, a, idx2 + j, nw, w);
-                        }
+                futures[idx++] = ConcurrencyUtils.submit(() -> {
+                    int isplt, j, k, m1;
+                    int idx1 = firstIdx + mf;
+                    m1 = n;
+                    while (m1 > 512) {
+                        m1 >>= 2;
+                        cftmdl1(m1, a, idx1 - m1, w, nw - (m1 >> 1));
+                    }
+                    cftleaf(m1, 1, a, idx1 - m1, nw, w);
+                    k = 0;
+                    int idx2 = firstIdx - m1;
+                    for (j = mf - m1; j > 0; j -= m1) {
+                        k++;
+                        isplt = cfttree(m1, j, k, a, firstIdx, nw, w);
+                        cftleaf(m1, isplt, a, idx2 + j, nw, w);
                     }
                 });
             } else {
-                futures[idx++] = ConcurrencyUtils.submit(new Runnable() {
-                    public void run() {
-                        int isplt, j, k, m;
-                        int idx1 = firstIdx + mf;
-                        k = 1;
-                        m = n;
-                        while (m > 512) {
-                            m >>= 2;
-                            k <<= 2;
-                            cftmdl2(m, a, idx1 - m, w, nw - m);
-                        }
-                        cftleaf(m, 0, a, idx1 - m, nw, w);
-                        k >>= 1;
-                        int idx2 = firstIdx - m;
-                        for (j = mf - m; j > 0; j -= m) {
-                            k++;
-                            isplt = cfttree(m, j, k, a, firstIdx, nw, w);
-                            cftleaf(m, isplt, a, idx2 + j, nw, w);
-                        }
+                futures[idx++] = ConcurrencyUtils.submit(() -> {
+                    int isplt, j, k, m12;
+                    int idx1 = firstIdx + mf;
+                    k = 1;
+                    m12 = n;
+                    while (m12 > 512) {
+                        m12 >>= 2;
+                        k <<= 2;
+                        cftmdl2(m12, a, idx1 - m12, w, nw - m12);
+                    }
+                    cftleaf(m12, 0, a, idx1 - m12, nw, w);
+                    k >>= 1;
+                    int idx2 = firstIdx - m12;
+                    for (j = mf - m12; j > 0; j -= m12) {
+                        k++;
+                        isplt = cfttree(m12, j, k, a, firstIdx, nw, w);
+                        cftleaf(m12, isplt, a, idx2 + j, nw, w);
                     }
                 });
             }
@@ -5591,7 +5586,6 @@ public class CommonUtils {
             n2 = n;
         }
         if ((nthreads > 1) && (n2 > CommonUtils.getThreadsBeginN_1D_FFT_2Threads())) {
-            nthreads = 2;
             final int k = n2 / nthreads;
             Future<?>[] futures = new Future[nthreads];
             for (int i = 0; i < nthreads; i++) {
@@ -5625,26 +5619,22 @@ public class CommonUtils {
             n2 = n;
         }
         if ((nthreads > 1) && (n2 > CommonUtils.getThreadsBeginN_1D_FFT_2Threads())) {
-            nthreads = 2;
             final int k = n2 / nthreads;
             Future<?>[] futures = new Future[nthreads];
             for (int i = 0; i < nthreads; i++) {
                 final int firstIdx = offa + i * k;
                 final int lastIdx = (i == (nthreads - 1)) ? offa + n2 : firstIdx + k;
-                futures[i] = ConcurrencyUtils.submit(new Runnable() {
-                    public void run() {
-                        for (int i = firstIdx; i < lastIdx; i++) {
-                            a[i] *= m;
-                        }
-
+                futures[i] = ConcurrencyUtils.submit(() -> {
+                    for (int i1 = firstIdx; i1 < lastIdx; i1++) {
+                        a[i1] *= m;
                     }
+
                 });
             }
             ConcurrencyUtils.waitForCompletion(futures);
         } else {
-            int firstIdx = offa;
             int lastIdx = offa + n2;
-            for (int i = firstIdx; i < lastIdx; i++) {
+            for (int i = offa; i < lastIdx; i++) {
                 a[i] *= m;
             }
         }

@@ -7,7 +7,7 @@ import java.util.concurrent.Future;
 
 public class CoroutineUtils {
 
-    private static final int TASK_SIZE = 10_000;
+    private static final int TASK_SIZE = Integer.MAX_VALUE;
 
     private ExecutorService CORO_POOL;
 

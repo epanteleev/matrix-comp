@@ -281,24 +281,4 @@ public class Matrix2D {
     public Matrix2D copy() {
         return like().assign(this);
     }
-
-    public Matrix2D inverse() {
-        Matrix2D inv = copy();
-        if (isSquare() && isDiagonal()) {
-            boolean isNonSingular = true;
-            for (int i = inv.rows(); --i >= 0; ) {
-                double v = inv.getQuick(i, i);
-                isNonSingular &= (v != 0);
-                inv.setQuick(i, i, 1 / v);
-            }
-            if (!isNonSingular) {
-                throw new IllegalArgumentException("A is singular.");
-            }
-        } else {
-            Matrix2D lu = copy();
-            int[] p = Algorithm.LUPDecomposition(lu);
-            Algorithm.LUPInvert(inv, lu, p);
-        }
-        return inv;
-    }
 }

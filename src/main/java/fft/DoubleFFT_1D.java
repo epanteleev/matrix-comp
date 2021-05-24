@@ -1101,15 +1101,11 @@ public final class DoubleFFT_1D {
         final double[] ak = new double[2 * nBluestein];
         int threads = ConcurrencyUtils.getNumberOfThreads();
         if ((threads > 1) && (n >= CommonUtils.getThreadsBeginN_1D_FFT_2Threads())) {
-            int nthreads = 2;
-            if ((threads >= 4) && (n >= CommonUtils.getThreadsBeginN_1D_FFT_4Threads())) {
-                nthreads = 4;
-            }
-            Future<?>[] futures = new Future[nthreads];
-            int k = n / nthreads;
-            for (int i = 0; i < nthreads; i++) {
+            Future<?>[] futures = new Future[threads];
+            int k = n / threads;
+            for (int i = 0; i < threads; i++) {
                 final int firstIdx = i * k;
-                final int lastIdx = (i == (nthreads - 1)) ? n : firstIdx + k;
+                final int lastIdx = (i == (threads - 1)) ? n : firstIdx + k;
                 futures[i] = ConcurrencyUtils.submit(new Runnable() {
                     public void run() {
                         if (isign > 0) {
@@ -1136,28 +1132,26 @@ public final class DoubleFFT_1D {
 
             CommonUtils.cftbsub(2 * nBluestein, ak, 0, ip, nw, w);
 
-            k = nBluestein / nthreads;
-            for (int i = 0; i < nthreads; i++) {
+            k = nBluestein / threads;
+            for (int i = 0; i < threads; i++) {
                 final int firstIdx = i * k;
-                final int lastIdx = (i == (nthreads - 1)) ? nBluestein : firstIdx + k;
-                futures[i] = ConcurrencyUtils.submit(new Runnable() {
-                    public void run() {
-                        if (isign > 0) {
-                            for (int i = firstIdx; i < lastIdx; i++) {
-                                int idx1 = 2 * i;
-                                int idx2 = idx1 + 1;
-                                double im = -ak[idx1] * bk2[idx2] + ak[idx2] * bk2[idx1];
-                                ak[idx1] = ak[idx1] * bk2[idx1] + ak[idx2] * bk2[idx2];
-                                ak[idx2] = im;
-                            }
-                        } else {
-                            for (int i = firstIdx; i < lastIdx; i++) {
-                                int idx1 = 2 * i;
-                                int idx2 = idx1 + 1;
-                                double im = ak[idx1] * bk2[idx2] + ak[idx2] * bk2[idx1];
-                                ak[idx1] = ak[idx1] * bk2[idx1] - ak[idx2] * bk2[idx2];
-                                ak[idx2] = im;
-                            }
+                final int lastIdx = (i == (threads - 1)) ? nBluestein : firstIdx + k;
+                futures[i] = ConcurrencyUtils.submit(() -> {
+                    if (isign > 0) {
+                        for (int i1 = firstIdx; i1 < lastIdx; i1++) {
+                            int idx1 = 2 * i1;
+                            int idx2 = idx1 + 1;
+                            double im = -ak[idx1] * bk2[idx2] + ak[idx2] * bk2[idx1];
+                            ak[idx1] = ak[idx1] * bk2[idx1] + ak[idx2] * bk2[idx2];
+                            ak[idx2] = im;
+                        }
+                    } else {
+                        for (int i1 = firstIdx; i1 < lastIdx; i1++) {
+                            int idx1 = 2 * i1;
+                            int idx2 = idx1 + 1;
+                            double im = ak[idx1] * bk2[idx2] + ak[idx2] * bk2[idx1];
+                            ak[idx1] = ak[idx1] * bk2[idx1] - ak[idx2] * bk2[idx2];
+                            ak[idx2] = im;
                         }
                     }
                 });
@@ -1166,26 +1160,24 @@ public final class DoubleFFT_1D {
 
             CommonUtils.cftfsub(2 * nBluestein, ak, 0, ip, nw, w);
 
-            k = n / nthreads;
-            for (int i = 0; i < nthreads; i++) {
+            k = n / threads;
+            for (int i = 0; i < threads; i++) {
                 final int firstIdx = i * k;
-                final int lastIdx = (i == (nthreads - 1)) ? n : firstIdx + k;
-                futures[i] = ConcurrencyUtils.submit(new Runnable() {
-                    public void run() {
-                        if (isign > 0) {
-                            for (int i = firstIdx; i < lastIdx; i++) {
-                                int idx1 = 2 * i;
-                                int idx2 = idx1 + 1;
-                                a[offa + idx1] = bk1[idx1] * ak[idx1] - bk1[idx2] * ak[idx2];
-                                a[offa + idx2] = bk1[idx2] * ak[idx1] + bk1[idx1] * ak[idx2];
-                            }
-                        } else {
-                            for (int i = firstIdx; i < lastIdx; i++) {
-                                int idx1 = 2 * i;
-                                int idx2 = idx1 + 1;
-                                a[offa + idx1] = bk1[idx1] * ak[idx1] + bk1[idx2] * ak[idx2];
-                                a[offa + idx2] = -bk1[idx2] * ak[idx1] + bk1[idx1] * ak[idx2];
-                            }
+                final int lastIdx = (i == (threads - 1)) ? n : firstIdx + k;
+                futures[i] = ConcurrencyUtils.submit(() -> {
+                    if (isign > 0) {
+                        for (int i12 = firstIdx; i12 < lastIdx; i12++) {
+                            int idx1 = 2 * i12;
+                            int idx2 = idx1 + 1;
+                            a[offa + idx1] = bk1[idx1] * ak[idx1] - bk1[idx2] * ak[idx2];
+                            a[offa + idx2] = bk1[idx2] * ak[idx1] + bk1[idx1] * ak[idx2];
+                        }
+                    } else {
+                        for (int i12 = firstIdx; i12 < lastIdx; i12++) {
+                            int idx1 = 2 * i12;
+                            int idx2 = idx1 + 1;
+                            a[offa + idx1] = bk1[idx1] * ak[idx1] + bk1[idx2] * ak[idx2];
+                            a[offa + idx2] = -bk1[idx2] * ak[idx1] + bk1[idx1] * ak[idx2];
                         }
                     }
                 });
@@ -1255,15 +1247,11 @@ public final class DoubleFFT_1D {
         final double[] ak = new double[2 * nBluestein];
         int threads = ConcurrencyUtils.getNumberOfThreads();
         if ((threads > 1) && (n >= CommonUtils.getThreadsBeginN_1D_FFT_2Threads())) {
-            int nthreads = 2;
-            if ((threads >= 4) && (n >= CommonUtils.getThreadsBeginN_1D_FFT_4Threads())) {
-                nthreads = 4;
-            }
-            Future<?>[] futures = new Future[nthreads];
-            int k = n / nthreads;
-            for (int i = 0; i < nthreads; i++) {
+            Future<?>[] futures = new Future[threads];
+            int k = n / threads;
+            for (int i = 0; i < threads; i++) {
                 final int firstIdx = i * k;
-                final int lastIdx = (i == (nthreads - 1)) ? n : firstIdx + k;
+                final int lastIdx = (i == (threads - 1)) ? n : firstIdx + k;
                 futures[i] = ConcurrencyUtils.submit(new Runnable() {
                     public void run() {
                         for (int i = firstIdx; i < lastIdx; i++) {
@@ -1280,10 +1268,10 @@ public final class DoubleFFT_1D {
 
             CommonUtils.cftbsub(2 * nBluestein, ak, 0, ip, nw, w);
 
-            k = nBluestein / nthreads;
-            for (int i = 0; i < nthreads; i++) {
+            k = nBluestein / threads;
+            for (int i = 0; i < threads; i++) {
                 final int firstIdx = i * k;
-                final int lastIdx = (i == (nthreads - 1)) ? nBluestein : firstIdx + k;
+                final int lastIdx = (i == (threads - 1)) ? nBluestein : firstIdx + k;
                 futures[i] = ConcurrencyUtils.submit(new Runnable() {
                     public void run() {
                         for (int i = firstIdx; i < lastIdx; i++) {
@@ -1403,15 +1391,11 @@ public final class DoubleFFT_1D {
 
         int threads = ConcurrencyUtils.getNumberOfThreads();
         if ((threads > 1) && (n >= CommonUtils.getThreadsBeginN_1D_FFT_2Threads())) {
-            int nthreads = 2;
-            if ((threads >= 4) && (n >= CommonUtils.getThreadsBeginN_1D_FFT_4Threads())) {
-                nthreads = 4;
-            }
-            Future<?>[] futures = new Future[nthreads];
-            int k = nBluestein / nthreads;
-            for (int i = 0; i < nthreads; i++) {
+            Future<?>[] futures = new Future[threads];
+            int k = nBluestein / threads;
+            for (int i = 0; i < threads; i++) {
                 final int firstIdx = i * k;
-                final int lastIdx = (i == (nthreads - 1)) ? nBluestein : firstIdx + k;
+                final int lastIdx = (i == (threads - 1)) ? nBluestein : firstIdx + k;
                 futures[i] = ConcurrencyUtils.submit(new Runnable() {
                     public void run() {
                         for (int i = firstIdx; i < lastIdx; i++) {
@@ -1428,10 +1412,10 @@ public final class DoubleFFT_1D {
 
             CommonUtils.cftfsub(2 * nBluestein, ak, 0, ip, nw, w);
 
-            k = n / nthreads;
-            for (int i = 0; i < nthreads; i++) {
+            k = n / threads;
+            for (int i = 0; i < threads; i++) {
                 final int firstIdx = i * k;
-                final int lastIdx = (i == (nthreads - 1)) ? n : firstIdx + k;
+                final int lastIdx = (i == (threads - 1)) ? n : firstIdx + k;
                 futures[i] = ConcurrencyUtils.submit(new Runnable() {
                     public void run() {
                         for (int i = firstIdx; i < lastIdx; i++) {
@@ -1467,15 +1451,11 @@ public final class DoubleFFT_1D {
         final double[] ak = new double[2 * nBluestein];
         int threads = ConcurrencyUtils.getNumberOfThreads();
         if ((threads > 1) && (n >= CommonUtils.getThreadsBeginN_1D_FFT_2Threads())) {
-            int nthreads = 2;
-            if ((threads >= 4) && (n >= CommonUtils.getThreadsBeginN_1D_FFT_4Threads())) {
-                nthreads = 4;
-            }
-            Future<?>[] futures = new Future[nthreads];
-            int k = n / nthreads;
-            for (int i = 0; i < nthreads; i++) {
+            Future<?>[] futures = new Future[threads];
+            int k = n / threads;
+            for (int i = 0; i < threads; i++) {
                 final int firstIdx = i * k;
-                final int lastIdx = (i == (nthreads - 1)) ? n : firstIdx + k;
+                final int lastIdx = (i == (threads - 1)) ? n : firstIdx + k;
                 futures[i] = ConcurrencyUtils.submit(new Runnable() {
                     public void run() {
                         for (int i = firstIdx; i < lastIdx; i++) {
@@ -1492,10 +1472,10 @@ public final class DoubleFFT_1D {
 
             CommonUtils.cftbsub(2 * nBluestein, ak, 0, ip, nw, w);
 
-            k = nBluestein / nthreads;
-            for (int i = 0; i < nthreads; i++) {
+            k = nBluestein / threads;
+            for (int i = 0; i < threads; i++) {
                 final int firstIdx = i * k;
-                final int lastIdx = (i == (nthreads - 1)) ? nBluestein : firstIdx + k;
+                final int lastIdx = (i == (threads - 1)) ? nBluestein : firstIdx + k;
                 futures[i] = ConcurrencyUtils.submit(new Runnable() {
                     public void run() {
                         for (int i = firstIdx; i < lastIdx; i++) {
