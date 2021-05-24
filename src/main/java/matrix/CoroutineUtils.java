@@ -1,6 +1,6 @@
 package matrix;
 
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -9,32 +9,27 @@ public class CoroutineUtils {
 
     private static final int TASK_SIZE = 10_000;
 
-    private static ExecutorService CORO_POOL = Executors.newVirtualThreadExecutor();
+    private ExecutorService CORO_POOL;
 
-    public static Future<?> submit(Runnable task) {
+    public CoroutineUtils() {
+        this.CORO_POOL = Executors.newVirtualThreadExecutor();
+    }
+
+    public <T> Future<T> submit(Callable<T> task) {
         if (CORO_POOL.isShutdown() || CORO_POOL.isTerminated()) {
             CORO_POOL = Executors.newVirtualThreadExecutor();
         }
         return CORO_POOL.submit(task);
     }
 
-    /**
-     * Waits for all coroutines to complete computation.
-     *
-     * @param futures
-     *            handles to running coroutines
-     */
-    public static void waitForCompletion(Future<?>[] futures) {
-        try {
-            for (Future<?> future : futures) {
-                future.get();
-            }
-        } catch (ExecutionException | InterruptedException ex) {
-            ex.printStackTrace();
+    public Future<?> submit(Runnable task) {
+        if (CORO_POOL.isShutdown() || CORO_POOL.isTerminated()) {
+            CORO_POOL = Executors.newVirtualThreadExecutor();
         }
+        return CORO_POOL.submit(task);
     }
 
-    public static int maxTaskSize() {
+    public int getMaxNumWorkers() {
         return TASK_SIZE;
     }
 }

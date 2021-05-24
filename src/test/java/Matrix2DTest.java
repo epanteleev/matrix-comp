@@ -45,7 +45,6 @@ public class Matrix2DTest extends TestCase {
     }
 
     protected void populateMatrices() {
-        ConcurrencyUtils.setThreadsBeginN_2D(ConcurrencyUtils.getNumberOfThreads());
         for (int r = 0; r < A.rows(); r++) {
             for (int c = 0; c < A.columns(); c++) {
                 A.setQuick(r, c, random.nextDouble());
@@ -88,6 +87,7 @@ public class Matrix2DTest extends TestCase {
     }
 
     public void testMult() {
+        ConcurrencyUtils.useThreads();
         double[][] expected = makeExpect(A, Bt);
         Matrix2D C = A.mult(Bt);
         check(expected, C);
@@ -99,12 +99,13 @@ public class Matrix2DTest extends TestCase {
     }
 
     public void testMultCoro() {
+        ConcurrencyUtils.useCoroutines();
         double[][] expected = makeExpect(A, Bt);
-        Matrix2D C = A.cMult(Bt);
+        Matrix2D C = A.mult(Bt);
         check(expected, C);
 
         //---
-        C = A.cMult(B);
+        C = A.mult(B);
         expected = makeExpect(A, B);
         check(expected, C);
     }

@@ -7,12 +7,19 @@ import java.util.concurrent.*;
  */
 public class ConcurrencyUtils {
 
-    private static ExecutorService THREAD_POOL = Executors.newCachedThreadPool(new CustomThreadFactory(
-            new CustomExceptionHandler()));
+    static ThreadUtils threadUtils = new ThreadUtils();
 
-    private static int NTHREADS = getNumberOfProcessors();
+    static CoroutineUtils coroutineUtils = new CoroutineUtils();
 
-    private static int THREADS_BEGIN_N_2D = Integer.MAX_VALUE;
+    static boolean useCoro;
+
+    public static void useCoroutines() {
+        useCoro = true;
+    }
+
+    public static void useThreads() {
+        useCoro = false;
+    }
 
     /**
      * Returns the number of available processors
@@ -22,30 +29,6 @@ public class ConcurrencyUtils {
     public static int getNumberOfProcessors() {
         return Runtime.getRuntime().availableProcessors();
     }
-
-    private static class CustomExceptionHandler implements Thread.UncaughtExceptionHandler {
-        public void uncaughtException(Thread t, Throwable e) {
-            e.printStackTrace();
-        }
-    }
-
-    private static class CustomThreadFactory implements ThreadFactory {
-        private static final ThreadFactory defaultFactory = Executors.defaultThreadFactory();
-
-        private final Thread.UncaughtExceptionHandler handler;
-
-        CustomThreadFactory(Thread.UncaughtExceptionHandler handler) {
-            this.handler = handler;
-        }
-
-        public Thread newThread(Runnable r) {
-            Thread t = defaultFactory.newThread(r);
-            t.setUncaughtExceptionHandler(handler);
-            t.setDaemon(true);
-            return t;
-        }
-    };
-
     /**
      * Causes the currently executing thread to sleep (temporarily cease
      * execution) for the specified number of milliseconds.
@@ -61,13 +44,6 @@ public class ConcurrencyUtils {
     }
 
     /**
-     * Shutdowns the thread pool.
-     */
-    public static void shutdown() {
-        THREAD_POOL.shutdown();
-    }
-
-    /**
      * Submits a value-returning task for execution and returns a Future
      * representing the pending results of the task.
      *
@@ -77,10 +53,11 @@ public class ConcurrencyUtils {
      * @return a handle to the task submitted for execution
      */
     public static <T> Future<T> submit(Callable<T> task) {
-        if (THREAD_POOL.isShutdown() || THREAD_POOL.isTerminated()) {
-            THREAD_POOL = Executors.newCachedThreadPool(new CustomThreadFactory(new CustomExceptionHandler()));
+        if (useCoro){
+            return coroutineUtils.submit(task);
+        } else {
+            return threadUtils.submit(task);
         }
-        return THREAD_POOL.submit(task);
     }
 
     /**
@@ -92,10 +69,11 @@ public class ConcurrencyUtils {
      * @return a handle to the task submitted for execution
      */
     public static Future<?> submit(Runnable task) {
-        if (THREAD_POOL.isShutdown() || THREAD_POOL.isTerminated()) {
-            THREAD_POOL = Executors.newCachedThreadPool(new CustomThreadFactory(new CustomExceptionHandler()));
+        if (useCoro){
+            return coroutineUtils.submit(task);
+        } else {
+            return threadUtils.submit(task);
         }
-        return THREAD_POOL.submit(task);
     }
 
     /**
@@ -104,7 +82,11 @@ public class ConcurrencyUtils {
      * @return the current number of threads.
      */
     public static int getNumberOfThreads() {
-        return NTHREADS;
+        if (useCoro){
+            return coroutineUtils.getMaxNumWorkers();
+        } else {
+            return threadUtils.getMaxNumWorkers();
+        }
     }
 
     /**
@@ -121,25 +103,5 @@ public class ConcurrencyUtils {
         } catch (ExecutionException | InterruptedException ex) {
             ex.printStackTrace();
         }
-    }
-
-    public static void setNumberOfThreads(int n) {
-        if (n < 1) {
-            throw new IllegalArgumentException("n must be greater or equal 1");
-        }
-        NTHREADS = n;
-    }
-
-    public static void setThreadsBeginN_2D(int n) {
-        THREADS_BEGIN_N_2D = n;
-    }
-
-    /**
-     * Returns the minimal size of 2D data for which threads are used.
-     *
-     * @return the minimal size of 2D data for which threads are used
-     */
-    public static int getThreadsBeginN_2D() {
-        return THREADS_BEGIN_N_2D;
     }
 }

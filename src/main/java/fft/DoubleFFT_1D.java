@@ -19,7 +19,7 @@ import static org.apache.commons.math3.util.FastMath.*;
  */
 public final class DoubleFFT_1D {
 
-    private static enum Plans {
+    private enum Plans {
 
         SPLIT_RADIX, MIXED_RADIX, BLUESTEIN
     }
@@ -338,15 +338,13 @@ public final class DoubleFFT_1D {
                     for (int i = 0; i < nthreads; i++) {
                         final int firstIdx = i * k;
                         final int lastIdx = (i == (nthreads - 1)) ? n / 2 : firstIdx + k;
-                        futures[i] = ConcurrencyUtils.submit(new Runnable() {
-                            public void run() {
-                                int idx1, idx2;
-                                for (int k = firstIdx; k < lastIdx; k++) {
-                                    idx1 = 2 * k;
-                                    idx2 = offa + ((twon - idx1) % twon);
-                                    a[idx2] = a[offa + idx1];
-                                    a[idx2 + 1] = -a[offa + idx1 + 1];
-                                }
+                        futures[i] = ConcurrencyUtils.submit(() -> {
+                            int idx1, idx2;
+                            for (int k1 = firstIdx; k1 < lastIdx; k1++) {
+                                idx1 = 2 * k1;
+                                idx2 = offa + ((twon - idx1) % twon);
+                                a[idx2] = a[offa + idx1];
+                                a[idx2 + 1] = -a[offa + idx1 + 1];
                             }
                         });
                     }
@@ -528,15 +526,13 @@ public final class DoubleFFT_1D {
                     for (int i = 0; i < nthreads; i++) {
                         final int firstIdx = i * k;
                         final int lastIdx = (i == (nthreads - 1)) ? n / 2 : firstIdx + k;
-                        futures[i] = ConcurrencyUtils.submit(new Runnable() {
-                            public void run() {
-                                int idx1, idx2;
-                                for (int k = firstIdx; k < lastIdx; k++) {
-                                    idx1 = 2 * k;
-                                    idx2 = offa + ((twon - idx1) % twon);
-                                    a[idx2] = a[offa + idx1];
-                                    a[idx2 + 1] = -a[offa + idx1 + 1];
-                                }
+                        futures[i] = ConcurrencyUtils.submit(() -> {
+                            int idx1, idx2;
+                            for (int k1 = firstIdx; k1 < lastIdx; k1++) {
+                                idx1 = 2 * k1;
+                                idx2 = offa + ((twon - idx1) % twon);
+                                a[idx2] = a[offa + idx1];
+                                a[idx2 + 1] = -a[offa + idx1 + 1];
                             }
                         });
                     }

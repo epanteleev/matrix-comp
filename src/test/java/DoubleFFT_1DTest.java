@@ -90,7 +90,6 @@ public class DoubleFFT_1DTest {
         this.random = new Random(seed);
         CommonUtils.setThreadsBeginN_1D_FFT_2Threads(1024);
         CommonUtils.setThreadsBeginN_1D_FFT_4Threads(1024);
-        ConcurrencyUtils.setNumberOfThreads(numThreads);
         this.numThreads = ConcurrencyUtils.getNumberOfThreads();
     }
 

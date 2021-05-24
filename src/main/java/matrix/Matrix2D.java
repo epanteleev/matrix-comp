@@ -119,7 +119,7 @@ public class Matrix2D {
         if (this == CC || B == CC)
             throw new IllegalArgumentException("Matrices must not be identical");
         int nthreads = ConcurrencyUtils.getNumberOfThreads();
-        if ((nthreads > 1) && (size() >= ConcurrencyUtils.getThreadsBeginN_2D())) {
+        if (nthreads > 1) {
             nthreads = Math.min(nthreads, p);
             Future<?>[] futures = new Future[nthreads];
             int k = p / nthreads;
@@ -150,50 +150,6 @@ public class Matrix2D {
                 }
             }
         }
-        return CC;
-    }
-
-    /**
-     * Used coroutines for mult.
-     */
-    public Matrix2D cMult(final Matrix2D B) {
-        final int m = rows;
-        final int n = columns;
-        final int p = B.columns;
-        final Matrix2D CC = like(m, p);
-
-        if (B.rows != n) {
-            throw new IllegalArgumentException("matrix.Matrix2D inner dimensions must agree:" + toStringShort() + ", "
-                    + B.toStringShort());
-        }
-        if (CC.rows != m || CC.columns != p) {
-            throw new IllegalArgumentException("Incompatibe result matrix: " + toStringShort() + ", "
-                    + B.toStringShort() + ", " + CC.toStringShort());
-        }
-        if (this == CC || B == CC) {
-            throw new IllegalArgumentException("Matrices must not be identical");
-        }
-        int maxTaskSize = Math.min(CoroutineUtils.maxTaskSize(), p);
-
-        Future<?>[] futures = new Future[maxTaskSize];
-        int k = p / maxTaskSize;
-        for (int j = 0; j < maxTaskSize; j++) {
-            final int firstIdx = j * k;
-            final int lastIdx = (j == maxTaskSize - 1) ? p : firstIdx + k;
-            futures[j] = CoroutineUtils.submit(() -> {
-                for (int a = firstIdx; a < lastIdx; a++) {
-                    for (int b = 0; b < m; b++) {
-                        double s = 0;
-                        for (int c = 0; c < n; c++) {
-                            s += getQuick(b, c) * B.getQuick(c, a);
-                        }
-                        CC.setQuick(b, a, s);
-                    }
-                }
-            });
-        }
-        CoroutineUtils.waitForCompletion(futures);
-
         return CC;
     }
 
@@ -243,7 +199,7 @@ public class Matrix2D {
             source = other;
         }
         int nthreads = ConcurrencyUtils.getNumberOfThreads();
-        if ((nthreads > 1) && (rows * columns >= ConcurrencyUtils.getThreadsBeginN_2D())) {
+        if (nthreads > 1) {
             nthreads = Math.min(nthreads, rows);
             Future<?>[] futures = new Future[nthreads];
             int k = rows / nthreads;
@@ -280,7 +236,7 @@ public class Matrix2D {
         int nthreads = ConcurrencyUtils.getNumberOfThreads();
 
         final int zero = (int) index(0, 0);
-        if ((nthreads > 1) && (size() >= ConcurrencyUtils.getThreadsBeginN_2D())) {
+        if (nthreads > 1) {
             nthreads = Math.min(nthreads, rows);
             Future<?>[] futures = new Future[nthreads];
             int k = rows / nthreads;
@@ -345,5 +301,4 @@ public class Matrix2D {
         }
         return inv;
     }
-
 }
