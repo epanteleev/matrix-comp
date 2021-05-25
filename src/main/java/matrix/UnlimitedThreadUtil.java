@@ -12,12 +12,14 @@ public class UnlimitedThreadUtil extends Concurrency {
     private ExecutorService threadPool;
 
     public UnlimitedThreadUtil() {
-        this.threadPool = Executors.newCachedThreadPool();
+        this.threadPool = Executors.newThreadExecutor(new CustomThreadFactory(
+                new CustomExceptionHandler()));
     }
 
     public Future<?> submit(Runnable task) {
         if (threadPool.isShutdown() || threadPool.isTerminated()) {
-            threadPool = Executors.newCachedThreadPool();
+            threadPool = Executors.newThreadExecutor(new CustomThreadFactory(
+                    new CustomExceptionHandler()));
         }
         return threadPool.submit(task);
     }

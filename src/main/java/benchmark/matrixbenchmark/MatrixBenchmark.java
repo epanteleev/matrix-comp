@@ -10,18 +10,19 @@ import java.util.concurrent.TimeUnit;
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
+@Fork(value = 5, jvmArgs = {"-Xms2G", "-Xmx20G"})
 public class MatrixBenchmark {
 
-    private static Random random;
+    protected static Random random;
     /**
      * Matrix to test
      */
-    private Matrix2D A;
+    protected Matrix2D A;
 
     /**
      * Matrix of the same size as A
      */
-    private Matrix2D B;
+    protected Matrix2D B;
 
     @Setup(Level.Invocation)
     public void setUp() {
@@ -31,7 +32,7 @@ public class MatrixBenchmark {
         populateMatrices();
     }
 
-    private void populateMatrices() {
+    protected void populateMatrices() {
         for (int r = 0; r < A.rows(); r++) {
             for (int c = 0; c < A.columns(); c++) {
                 A.setQuick(r, c, random.nextDouble());
@@ -45,16 +46,16 @@ public class MatrixBenchmark {
         }
     }
 
-    private void createMatrices() {
-        int NROWS = 1300;
-        int NCOLUMNS = 1700;
+    protected void createMatrices() {
+        int NROWS = 6000;
+        int NCOLUMNS = 7000;
         A = new Matrix2D(NROWS, NCOLUMNS);
         B = new Matrix2D(NCOLUMNS, NROWS);
     }
 
     @Benchmark
     @BenchmarkMode(Mode.AverageTime)
-    public void matMull() {
+    final public void matMull() {
         Matrix2D C = A.mult(B);
     }
 
