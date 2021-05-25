@@ -1,13 +1,16 @@
-package matrixbenchmark;
+package benchmark.matrixbenchmark;
 
 import matrix.ConcurrencyUtils;
+import matrix.CoroutineUtils;
 import matrix.Matrix2D;
 import org.openjdk.jmh.annotations.*;
 
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 @State(Scope.Benchmark)
-public class MatrixBenchmarkCoroutine {
+@OutputTimeUnit(TimeUnit.MILLISECONDS)
+public class MatrixBenchmarkUnlimitedThreads {
 
     private static Random random;
     /**
@@ -22,7 +25,7 @@ public class MatrixBenchmarkCoroutine {
 
     @Setup(Level.Invocation)
     public void setUp() {
-        ConcurrencyUtils.useCoroutines();
+        ConcurrencyUtils.useUnlimitedThreads();
         random = new Random(0);
         createMatrices();
         populateMatrices();
@@ -59,3 +62,4 @@ public class MatrixBenchmarkCoroutine {
         org.openjdk.jmh.Main.main(args);
     }
 }
+

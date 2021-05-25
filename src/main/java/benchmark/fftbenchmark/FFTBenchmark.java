@@ -1,4 +1,4 @@
-package fftbenchmark;
+package benchmark.fftbenchmark;
 
 import fft.DoubleFFT_1D;
 import fft.IOUtils;
@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Fork(value = 5, jvmArgs = {"-Xms2G", "-Xmx10G"})
-public class FFTBenchmarkCoroutines {
+public class FFTBenchmark {
 
     private DoubleFFT_1D fft;
 
@@ -20,7 +20,7 @@ public class FFTBenchmarkCoroutines {
 
     @Setup(Level.Invocation)
     public void setUp() {
-        ConcurrencyUtils.useCoroutines();
+        ConcurrencyUtils.useThreads();
         this.fft = new DoubleFFT_1D(sizes1D);
         this.x = new double[(int) (2 * sizes1D)];
         IOUtils.fillMatrix_1D(sizes1D, x);

@@ -2,7 +2,7 @@ package matrix;
 
 import java.util.concurrent.*;
 
-public class ThreadUtils {
+public class ThreadUtils  extends Concurrency {
     private ExecutorService THREAD_POOL;
 
     private static class CustomExceptionHandler implements Thread.UncaughtExceptionHandler {
@@ -31,22 +31,6 @@ public class ThreadUtils {
     public ThreadUtils() {
         this.THREAD_POOL = Executors.newCachedThreadPool(new CustomThreadFactory(
                 new CustomExceptionHandler()));
-    }
-
-    /**
-     * Submits a value-returning task for execution and returns a Future
-     * representing the pending results of the task.
-     *
-     * @param <T>
-     * @param task
-     *            task for execution
-     * @return a handle to the task submitted for execution
-     */
-    public <T> Future<T> submit(Callable<T> task) {
-        if (THREAD_POOL.isShutdown() || THREAD_POOL.isTerminated()) {
-            THREAD_POOL = Executors.newCachedThreadPool(new CustomThreadFactory(new CustomExceptionHandler()));
-        }
-        return THREAD_POOL.submit(task);
     }
 
     public Future<?> submit(Runnable task) {

@@ -1,32 +1,24 @@
 package matrix;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-public class CoroutineUtils {
+public class CoroutineUtils extends Concurrency {
 
     private static final int TASK_SIZE = Integer.MAX_VALUE;
 
-    private ExecutorService CORO_POOL;
+    private ExecutorService coroPool;
 
     public CoroutineUtils() {
-        this.CORO_POOL = Executors.newVirtualThreadExecutor();
-    }
-
-    public <T> Future<T> submit(Callable<T> task) {
-        if (CORO_POOL.isShutdown() || CORO_POOL.isTerminated()) {
-            CORO_POOL = Executors.newVirtualThreadExecutor();
-        }
-        return CORO_POOL.submit(task);
+        this.coroPool = Executors.newVirtualThreadExecutor();
     }
 
     public Future<?> submit(Runnable task) {
-        if (CORO_POOL.isShutdown() || CORO_POOL.isTerminated()) {
-            CORO_POOL = Executors.newVirtualThreadExecutor();
+        if (coroPool.isShutdown() || coroPool.isTerminated()) {
+            coroPool = Executors.newVirtualThreadExecutor();
         }
-        return CORO_POOL.submit(task);
+        return coroPool.submit(task);
     }
 
     public int getMaxNumWorkers() {

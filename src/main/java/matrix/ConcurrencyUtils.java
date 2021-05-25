@@ -7,57 +7,19 @@ import java.util.concurrent.*;
  */
 public class ConcurrencyUtils {
 
-    static ThreadUtils threadUtils = new ThreadUtils();
+    static Concurrency coroutineUtils = new CoroutineUtils();
 
-    static CoroutineUtils coroutineUtils = new CoroutineUtils();
-
-    static boolean useCoro;
 
     public static void useCoroutines() {
-        useCoro = true;
+        coroutineUtils = new CoroutineUtils();
     }
 
     public static void useThreads() {
-        useCoro = false;
+        coroutineUtils = new ThreadUtils();
     }
 
-    /**
-     * Returns the number of available processors
-     *
-     * @return number of available processors
-     */
-    public static int getNumberOfProcessors() {
-        return Runtime.getRuntime().availableProcessors();
-    }
-    /**
-     * Causes the currently executing thread to sleep (temporarily cease
-     * execution) for the specified number of milliseconds.
-     *
-     * @param millis
-     */
-    public static void sleep(long millis) {
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Submits a value-returning task for execution and returns a Future
-     * representing the pending results of the task.
-     *
-     * @param <T>
-     * @param task
-     *            task for execution
-     * @return a handle to the task submitted for execution
-     */
-    public static <T> Future<T> submit(Callable<T> task) {
-        if (useCoro){
-            return coroutineUtils.submit(task);
-        } else {
-            return threadUtils.submit(task);
-        }
+    public static void useUnlimitedThreads() {
+        coroutineUtils = new UnlimitedThreadUtil();
     }
 
     /**
@@ -69,11 +31,7 @@ public class ConcurrencyUtils {
      * @return a handle to the task submitted for execution
      */
     public static Future<?> submit(Runnable task) {
-        if (useCoro){
-            return coroutineUtils.submit(task);
-        } else {
-            return threadUtils.submit(task);
-        }
+        return coroutineUtils.submit(task);
     }
 
     /**
@@ -82,11 +40,7 @@ public class ConcurrencyUtils {
      * @return the current number of threads.
      */
     public static int getNumberOfThreads() {
-        if (useCoro){
-            return coroutineUtils.getMaxNumWorkers();
-        } else {
-            return threadUtils.getMaxNumWorkers();
-        }
+        return coroutineUtils.getMaxNumWorkers();
     }
 
     /**
